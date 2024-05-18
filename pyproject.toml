@@ -1,14 +1,13 @@
 [project]
 name = "tiny-s3"
-version = "0.1.0"
+version = "0.0.1"
 description = "Tiny S3 client"
-authors = [
-    {name = "Sergey Abramov", email = "spabramov@gmail.com"},
-]
+authors = [{ name = "Sergey Abramov", email = "spabramov@gmail.com" }]
 dependencies = []
 requires-python = ">=3.9"
 readme = "README.md"
-license = {text = "MIT"}
+license = { text = "MIT" }
+
 
 [build-system]
 requires = ["pdm-backend"]
@@ -17,3 +16,10 @@ build-backend = "pdm.backend"
 
 [tool.pdm]
 distribution = true
+
+[tool.pdm.dev-dependencies]
+test = ["pytest>=8.2.0"]
+lint = ["ruff>=0.4.4", "flake8>=7.0.0"]
+dev = [
+    "pdm>=2.15.2",
+]
