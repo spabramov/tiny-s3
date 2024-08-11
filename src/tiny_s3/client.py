@@ -4,8 +4,8 @@ import logging
 from datetime import datetime, timezone
 from hashlib import sha1
 from typing import Any, Iterator, Optional
-from xml.dom import minidom
 from xml.etree import ElementTree
+from xml.etree.ElementTree import Element
 
 import requests
 
@@ -16,10 +16,10 @@ log = logging.getLogger(_LOGGER)
 
 Params = dict[str, str]
 Headers = dict[str, str]
+Item = dict[str, Optional[str]]
 
 
 class Client:
-
     def __init__(self, url: str, access_key: str, secret_key: str, bucket: str) -> None:
         self.base_url = url
         self.access_key = access_key
@@ -33,10 +33,8 @@ class Client:
         method: str = "GET",
         params: Optional[Params] = None,
     ) -> requests.Response:
-
         full_key = f"{self.bucket}/{key}"
-        # Create the authorization Signature
-        headers = self.create_s3_headers(full_key, method)
+        headers = self.create_aws_headers(full_key, method)
         # headers["Content-type"] = "application/json"
 
         return requests.request(
@@ -49,19 +47,17 @@ class Client:
             params=params,
         )
 
-    def create_s3_headers(self, key: str, method: str) -> Headers:
+    def create_aws_headers(self, full_key: str, method: str) -> Headers:
         """
-        create_aws_signature using the logic documented at
+        create aws headers with authorization logic documented at
         https://docs.aws.amazon.com/AmazonS3/latest/API/sig-v4-authenticating-requests.html#signing-request-intro
-        to generate the signature for authorization of the REST API.
-        :param date: Current date string needed as part of the signing method
         :param key: String path of where the file will be accessed
         :param method: String method of the type of request
-        :return:
+        :return: dict of headers
         """
         # Current time needs to be within 10 minutes of the S3 Server
         date = datetime.now(timezone.utc).strftime(_DATE_FORMAT)
-        string_to_sign = f"{method}\n\n\n{date}\n/{key}".encode("UTF-8")
+        string_to_sign = f"{method}\n\n\n{date}\n/{full_key}".encode("UTF-8")
 
         log.debug(string_to_sign)
         signature = (
@@ -80,14 +76,19 @@ class Client:
             "Date": date,
         }
 
-    def list_objects(self) -> Iterator[str]:
+    def list_objects(self) -> Iterator[Item]:
         respose = self.request()
 
-        root = minidom.parseString(respose.text)
-        print(root)
-
         root = ElementTree.fromstring(respose.text)
-        for obj in (child for child in root if child.tag.endswith("}Contents")):
-            for attr in obj:
-                if attr.tag.endswith("}Key"):
-                    yield attr.text
+        for item in (child for child in root if child.tag.endswith("}Contents")):
+            yield _to_dict(item)
+
+
+def _key(text: str, sep="}") -> str:
+    if sep in text:
+        return text.split(sep, 1)[1]
+    return text
+
+
+def _to_dict(item: Element) -> Item:
+    return {_key(attr.tag): attr.text for attr in item}

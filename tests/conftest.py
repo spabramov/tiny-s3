@@ -1,8 +1,7 @@
 import os
-from io import BytesIO
 
-import minio
 import pytest
+from minio import Minio
 
 from tiny_s3 import Client
 
@@ -30,21 +29,20 @@ def fx_bucket() -> str:
     return get("S3_BUCKET")
 
 
-@pytest.fixture(autouse=True, scope="session")
-def create_bucket(s3_endpoint: str, bucket: str) -> None:
-    client = minio.Minio(
+@pytest.fixture(name="minio")
+def fx_minio(s3_endpoint: str) -> Minio:
+    return Minio(
         endpoint=s3_endpoint,
         access_key=get("S3_ACCESS_KEY"),
         secret_key=get("S3_SECRET_KEY"),
         secure=False,
     )
 
-    if not client.bucket_exists(bucket):
-        client.make_bucket(bucket)
 
-    client.put_object(
-        bucket_name=bucket, object_name="foo.txt", data=BytesIO(b""), length=0
-    )
+@pytest.fixture(autouse=True)
+def create_bucket(minio: Minio, bucket: str) -> None:
+    if not minio.bucket_exists(bucket):
+        minio.make_bucket(bucket)
 
 
 @pytest.fixture(name="client")
