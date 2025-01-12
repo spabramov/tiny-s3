@@ -13,11 +13,8 @@ license = { text = "MIT" }
 requires = ["pdm-backend"]
 build-backend = "pdm.backend"
 
-
-[tool.pdm]
-distribution = true
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
+dev = ["pdm>=2.19", "debugpy>=1.8.1", "minio>=7.2.7"]
 test = ["pytest>=8.2.0", "pytest-dotenv>=0.5.2"]
 lint = [
     "ruff>=0.4.4",
@@ -28,8 +25,10 @@ lint = [
     "isort>=5.13.2",
     "types-requests>=2.32.0.20240712",
 ]
-dev = ["pdm>=2.15.2", "debugpy>=1.8.1", "minio>=7.2.7"]
 
+
+[tool.pdm]
+distribution = true
 
 [tool.pylint]
 disable = [
